@@ -30,6 +30,7 @@ require (
 	github.com/elastic/opentelemetry-collector-components/processor/ratelimitprocessor v0.62.0
 	github.com/elastic/opentelemetry-collector-components/receiver/akamaisiemreceiver v0.1.0
 	github.com/elastic/opentelemetry-collector-components/receiver/elasticapmintakereceiver v0.65.0
+	github.com/elastic/otel-quark-receiver/quarkreceiver v0.0.0-20260819224941-370b70f36a79
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.157.0
