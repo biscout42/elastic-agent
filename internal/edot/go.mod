@@ -118,7 +118,7 @@ require (
 	github.com/elastic/entcollect v0.0.0-20260720203654-e61fb8788d9a // indirect
 	github.com/elastic/go-libaudit/v2 v2.6.2 // indirect
 	github.com/elastic/go-licenser v0.4.2 // indirect
-	github.com/elastic/go-quark v0.6.0 // indirect
+	github.com/elastic/go-quark v0.8.0 // indirect
 	github.com/elastic/lumberjack v0.0.0-20260715013204-c5b60bbeaaab // indirect
 	github.com/elastic/opentelemetry-collector-components/internal/elasticattr v0.62.0 // indirect
 	github.com/elastic/opentelemetry-collector-components/internal/sharedcomponent v0.0.0-20250220025958-386ba0c4bced // indirect
