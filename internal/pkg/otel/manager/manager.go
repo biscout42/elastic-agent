@@ -500,8 +500,8 @@ func (m *OTelManager) buildMergedConfig(
 		}
 	}
 
-	if err := injectAgentTelemetryResource(mergedOtelCfg, agentInfo, logger); err != nil {
-		return nil, fmt.Errorf("failed to inject agent telemetry resource: %w", err)
+	if err := injectAgentMetadataProcessor(mergedOtelCfg, agentInfo); err != nil {
+		return nil, fmt.Errorf("failed to inject agent metadata processor: %w", err)
 	}
 
 	if err := injectDiagnosticsExtension(mergedOtelCfg); err != nil {

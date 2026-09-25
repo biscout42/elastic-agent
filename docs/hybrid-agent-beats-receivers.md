@@ -328,58 +328,62 @@ service:
                 - metricbeatreceiver
 ```
 
-### Agent metadata available to Collector components
+### Agent metadata in resource attributes
 
-When Elastic Agent supervises the Collector, it adds the following attributes to
-`service.telemetry.resource.attributes`, including when monitoring is disabled or
-only custom OTel pipelines are configured:
+When Elastic Agent supervises EDOT, it supplies `resource/agent_metadata`,
+including when Agent monitoring is disabled. Integrations opt in by referencing
+it in their pipelines. Agent generates the following definition with the local
+Agent ID and version:
 
 ```yaml
-service:
-  telemetry:
-    resource:
-      attributes:
-        - name: elastic_agent.id
-          value: "<agent ID>"
-        - name: elastic_agent.version
-          value: "<agent version>"
-        - name: elastic_agent.snapshot
-          value: false
-    logs:
-      disable_zap_resource: true
+processors:
+  resource/agent_metadata:
+    attributes:
+      - key: agent.id
+        value: "<Agent ID>"
+        action: upsert
+      - key: agent.version
+        value: "<Agent version>"
+        action: upsert
 ```
 
-Agent supplies the actual values automatically and overrides configured entries with
-these three names. Other entries and `schema_url` are preserved. `elastic_agent.snapshot`
-is a boolean.
+The ID is reserved for Elastic Agent: do not define it in the policy. Agent
+rejects conflicting definitions and does not automatically add the processor to
+any pipeline. The processor upserts only `agent.id` and `agent.version` on the
+resources of telemetry passing through the selected pipeline. Other resource
+attributes, log bodies, and log attributes are preserved. It does not change the
+Collector's internal telemetry resource.
 
-The Collector rejects configurations that mix the `attributes` list with the
-deprecated inline resource map (`service.telemetry.resource.<name>: <value>`). When a
-configuration uses the inline map and no `attributes` list, Agent adds the three
-attributes to the inline map instead. The inline map only accepts strings, so
-`elastic_agent.snapshot` is `"true"` or `"false"` there, and the Collector logs its
-usual deprecation warning for the inline format on startup.
+For Elasticsearch `bodymap` documents, the integration can copy these resource
+attributes into the body using its own transform processor. Place
+`resource/agent_metadata` before that transform:
 
-Agent leaves the resource untouched, and logs a warning, when it cannot merge into it:
-for example when `attributes` is a `${file:...}` or `${env:...}` reference that the
-Collector expands later, or when `resource` is not a map.
+```yaml
+processors:
+  transform/agent_to_body:
+    log_statements:
+      - context: log
+        conditions:
+          - IsMap(body)
+        statements:
+          - 'set(body["agent"], {}) where not IsMap(body["agent"])'
+          - 'set(body["agent"]["id"], resource.attributes["agent.id"])'
+          - 'set(body["agent"]["version"], resource.attributes["agent.version"])'
+service:
+  pipelines:
+    logs:
+      receivers: [your_receiver]
+      processors: [resource/agent_metadata, transform/agent_to_body]
+      exporters: [your_elasticsearch_exporter]
+```
 
-The Collector adds its resource attributes to every log line it writes unless
-`service.telemetry.logs.disable_zap_resource` is set. Agent monitoring already attaches
-the Agent identity to Collector logs, so Agent sets `disable_zap_resource: true` when the
-configuration does not set it. Set it to `false` explicitly to keep the resource
-attributes on Collector log lines.
+Keep any other processors your pipeline needs. Select only pipelines whose
+telemetry should identify this Agent, because upsert replaces existing Agent
+identity attributes.
 
-Custom receivers, processors, and connectors can read these attributes from
-`Settings.Resource.Attributes()` in their factories. They are also present on the
-Collector's own internal telemetry as emitted by the OpenTelemetry SDK, for example
-in the diagnostics file exporter and as Prometheus `target_info`. They are not added
-to the monitoring documents Agent indexes in Elasticsearch, which carry the Agent
-identity through the monitoring event template instead, and they are not
-automatically added to telemetry passing through pipelines: components must
-explicitly copy the required fields. For Elasticsearch `bodymap` documents, copy them
-into the log body. Stock OTTL `resource.attributes` accesses the incoming telemetry's
-resource, not this shared Collector resource.
+The generated definition is available only for Agent-supervised EDOT. When
+running `elastic-agent otel` directly, supply your own resource processor
+definition or remove the reference from the pipeline.
 
 ### Beats receivers delivery guarantees in OTel mode
 
